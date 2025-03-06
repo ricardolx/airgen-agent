@@ -70,3 +70,5 @@ node_modules/
 
 # firebase config
 .firebaserc
+
+view.html
