@@ -8,7 +8,8 @@ import {
   RemoveBackgroundTool,
   removeBackgroundTool,
 } from "./tools/removeBackground";
-import { ConvertToVectorTool } from "./tools/pngToVector";
+import { ConvertToVectorTool, convertToVectorTool } from "./tools/pngToVector";
+import { ChatCompletionMessage } from "openai/src/resources/index.js";
 
 export const invokeAgent = async (prompt: string) => {
   const messages: Array<ChatCompletionMessageParam> = [
@@ -24,22 +25,17 @@ export const handleAgent = async (
   base64?: string,
   format?: string
 ): Promise<{ base64: string; format: string }> => {
-  const openAIClient = getOpenAIClient();
-  const response = await openAIClient.chat.completions.create({
-    model: OpenAIModels.GPT_4o_MINI,
-    messages,
-    tools: [generateAssetTool, removeBackgroundTool],
-  });
+  const responseMessage = await callLlm(messages);
+  messages.push(responseMessage);
 
-  const tools = response.choices[0].message.tool_calls;
-  messages.push(response.choices[0].message);
+  const tools = responseMessage.tool_calls;
 
   let toolCall: ToolCall;
 
   if (tools) {
     for (const tool of tools) {
       const toolName = tool.function.name;
-      logger.info("---[ TOOL ]---", toolName);
+      logger.info("---[ TOOL 🔨 ]---", toolName);
 
       if (tool.function.name === AssetGenerator.tool_name && !base64) {
         const args = JSON.parse(tool.function.arguments);
@@ -78,4 +74,27 @@ export const handleAgent = async (
     return await handleAgent(messages, base64, format);
   }
   return { base64: base64 || "", format: format || "" };
+};
+
+export const callLlm = async (
+  messages: Array<ChatCompletionMessageParam>
+): Promise<ChatCompletionMessage> => {
+  const openAIClient = getOpenAIClient();
+  const response = await openAIClient.chat.completions.create({
+    model: OpenAIModels.GPT_4o_MINI,
+    messages,
+    tools: [generateAssetTool, removeBackgroundTool, convertToVectorTool],
+  });
+
+  console.log("[ Response Usage ]", response.usage);
+
+  const tools = response.choices[0].message.tool_calls;
+  if (tools) {
+    console.log(
+      "[ Response with Tools ]",
+      tools.map(tool => tool.function.name).join(", ")
+    );
+  }
+
+  return response.choices[0].message;
 };
