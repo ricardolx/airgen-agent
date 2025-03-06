@@ -4,6 +4,10 @@ import { agentPrompt } from "./prompts/agent";
 import { ToolCall } from "./tools";
 import { AssetGenerator, generateAssetTool } from "./tools/generateAsset";
 import * as logger from "firebase-functions/logger";
+import {
+  RemoveBackgroundTool,
+  removeBackgroundTool,
+} from "./tools/removeBackground";
 
 export const invokeAgent = async (prompt: string) => {
   const messages: Array<ChatCompletionMessageParam> = [
@@ -15,17 +19,15 @@ export const invokeAgent = async (prompt: string) => {
 };
 
 export const handleAgent = async (
-  messages: Array<ChatCompletionMessageParam>
-) => {
-  logger.info("[ HANDLE AGENT ]", { messages });
+  messages: Array<ChatCompletionMessageParam>,
+  base64?: string
+): Promise<any> => {
   const openAIClient = getOpenAIClient();
   const response = await openAIClient.chat.completions.create({
     model: OpenAIModels.GPT_4o,
     messages,
-    tools: [generateAssetTool],
+    tools: [generateAssetTool, removeBackgroundTool],
   });
-
-  logger.info("[ Agent Response ]", { response });
 
   const tools = response.choices[0].message.tool_calls;
   messages.push(response.choices[0].message);
@@ -33,13 +35,13 @@ export const handleAgent = async (
   let toolCall: ToolCall;
   if (tools) {
     for (const tool of tools) {
-      messages.push({
-        role: "assistant",
-        content: JSON.stringify(tool),
-      });
-
-      if (tool.function.name === "generate_asset") {
-        toolCall = new AssetGenerator(tool.function.arguments);
+      const toolName = tool.function.name;
+      logger.info("---[ TOOL ]---", toolName);
+      if (tool.function.name === AssetGenerator.tool_name) {
+        const args = JSON.parse(tool.function.arguments);
+        toolCall = new AssetGenerator(args.prompt, args.size);
+      } else if (tool.function.name === RemoveBackgroundTool.tool_name) {
+        toolCall = new RemoveBackgroundTool(base64!);
       } else {
         break;
       }
@@ -48,11 +50,12 @@ export const handleAgent = async (
 
       messages.push({
         role: "tool",
-        content: JSON.stringify(result),
+        content: result.message,
         tool_call_id: tool.id,
       });
 
-      return result;
+      return await handleAgent(messages, result.content.base64);
     }
   }
+  return base64;
 };
