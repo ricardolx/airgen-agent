@@ -3,14 +3,6 @@ import OpenAI from "openai";
 
 const openAiApiKey = defineSecret("OPENAI_API_KEY");
 
-// /**
-//  * OpenAI provider
-//  * @requires OPENAI_API_KEY
-//  */
-// export const openAIClient = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-
 export const getOpenAIClient = () => {
   return new OpenAI({
     apiKey: openAiApiKey.value(),
