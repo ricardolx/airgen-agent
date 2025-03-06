@@ -22,8 +22,8 @@ export const generateImage = onRequest(
       const result = await invokeAgent(prompt);
 
       // Convert base64 to binary buffer and send as image
-      const imageBuffer = Buffer.from(result, "base64");
-      response.setHeader("Content-Type", "image/png");
+      const imageBuffer = Buffer.from(result.base64, "base64");
+      response.setHeader("Content-Type", result.format);
       response.send(imageBuffer);
     } catch (error) {
       logger.error("Error generating image:", error);
