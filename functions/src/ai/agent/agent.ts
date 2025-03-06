@@ -21,11 +21,12 @@ export const invokeAgent = async (prompt: string) => {
 
 export const handleAgent = async (
   messages: Array<ChatCompletionMessageParam>,
-  base64?: string
+  base64?: string,
+  format?: string
 ): Promise<{ base64: string; format: string }> => {
   const openAIClient = getOpenAIClient();
   const response = await openAIClient.chat.completions.create({
-    model: OpenAIModels.GPT_4o,
+    model: OpenAIModels.GPT_4o_MINI,
     messages,
     tools: [generateAssetTool, removeBackgroundTool],
   });
@@ -34,7 +35,6 @@ export const handleAgent = async (
   messages.push(response.choices[0].message);
 
   let toolCall: ToolCall;
-  let format: string = "";
 
   if (tools) {
     for (const tool of tools) {
@@ -58,8 +58,16 @@ export const handleAgent = async (
       }
 
       const result = await toolCall.performCall();
+
+      console.log("[ Result ]", {
+        b64: result.content.base64.substring(0, 10),
+        format: result.content.format,
+      });
+
       base64 = result.content.base64;
       format = result.content.format;
+
+      console.log("[ New Format ]", format);
 
       messages.push({
         role: "tool",
@@ -67,7 +75,7 @@ export const handleAgent = async (
         tool_call_id: tool.id,
       });
     }
-    return await handleAgent(messages, base64);
+    return await handleAgent(messages, base64, format);
   }
-  return { base64: base64 || "", format };
+  return { base64: base64 || "", format: format || "" };
 };
