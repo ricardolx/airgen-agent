@@ -15,7 +15,8 @@ export const generateAssetTool: ChatCompletionTool = {
       properties: {
         prompt: {
           type: "string",
-          description: "The prompt to generate the asset",
+          description:
+            "Provide an extremely detailed prompt to generate the asset",
         },
         size: {
           type: "string",
@@ -34,7 +35,7 @@ export class AssetGenerator extends ToolCall {
   }
 
   performCall = async () => {
-    logger.info("[ Asset Generator PROMPT ]", this.prompt, this.size);
+    logger.info("[ Asset Generator ]", this.prompt, this.size);
 
     const openAIClient = getOpenAIClient();
     const response = await openAIClient.images.generate({
@@ -50,6 +51,7 @@ export class AssetGenerator extends ToolCall {
       message: "A base image has been generated",
       content: {
         base64: response.data[0].b64_json,
+        format: "image/webp",
       },
     };
   };
