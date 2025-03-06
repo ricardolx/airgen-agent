@@ -1,19 +1,26 @@
 import { ChatCompletionTool } from "openai/resources/index.mjs";
 import { ToolCall } from "../tools";
 import { getOpenAIClient } from "../../openai/openai";
+import { designerPrompt } from "../prompts/designer";
+import * as logger from "firebase-functions/logger";
 
 export const generateAssetTool: ChatCompletionTool = {
   type: "function",
   function: {
     name: "generate_asset",
     description:
-      "Generate an asset image in webp format for a software project",
+      "Generate an asset image in webp format for a software project. Most assets should be a square image, but banners and thumbnails can be landscape or portrait.",
     parameters: {
       type: "object",
       properties: {
         prompt: {
           type: "string",
           description: "The prompt to generate the asset",
+        },
+        size: {
+          type: "string",
+          description:
+            "The size of the asset: either '1024x1024' | '1792x1024' | '1024x1792'",
         },
       },
     },
@@ -22,23 +29,28 @@ export const generateAssetTool: ChatCompletionTool = {
 
 export class AssetGenerator extends ToolCall {
   static tool_name = "generate_asset";
-  constructor(private prompt: string) {
+  constructor(private prompt: string, private size: string) {
     super();
   }
 
   performCall = async () => {
+    logger.info("[ Asset Generator PROMPT ]", this.prompt, this.size);
+
     const openAIClient = getOpenAIClient();
     const response = await openAIClient.images.generate({
-      prompt: this.prompt,
+      model: "dall-e-3",
+      prompt: designerPrompt + "\n" + this.prompt,
       n: 1,
       quality: "hd",
       response_format: "b64_json",
-      size: "1024x1024",
+      size: this.size as any,
     });
 
-    return response.data[0].b64_json;
+    return {
+      message: "A base image has been generated",
+      content: {
+        base64: response.data[0].b64_json,
+      },
+    };
   };
-  static getJsonSchema(): object {
-    return generateAssetTool;
-  }
 }
