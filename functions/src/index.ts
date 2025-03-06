@@ -8,7 +8,7 @@ const openAiApiKey = defineSecret("OPENAI_API_KEY");
 console.log("[ OpenAI API Key ]", { openAiApiKey: openAiApiKey });
 
 export const generateImage = onRequest(
-  { secrets: [openAiApiKey] },
+  { secrets: [openAiApiKey], timeoutSeconds: 300 },
   async (request, response) => {
     try {
       const { prompt } = request.body;
@@ -23,6 +23,7 @@ export const generateImage = onRequest(
 
       // Convert base64 to binary buffer and send as image
       const imageBuffer = Buffer.from(result.base64, "base64");
+      console.log("[ Final Format ]", result.format);
       response.setHeader("Content-Type", result.format);
       response.send(imageBuffer);
     } catch (error) {
