@@ -8,6 +8,7 @@ import {
   RemoveBackgroundTool,
   removeBackgroundTool,
 } from "./tools/removeBackground";
+import { ConvertToVectorTool } from "./tools/pngToVector";
 
 export const invokeAgent = async (prompt: string) => {
   const messages: Array<ChatCompletionMessageParam> = [
@@ -21,7 +22,7 @@ export const invokeAgent = async (prompt: string) => {
 export const handleAgent = async (
   messages: Array<ChatCompletionMessageParam>,
   base64?: string
-): Promise<any> => {
+): Promise<{ base64: string; format: string }> => {
   const openAIClient = getOpenAIClient();
   const response = await openAIClient.chat.completions.create({
     model: OpenAIModels.GPT_4o,
@@ -33,29 +34,40 @@ export const handleAgent = async (
   messages.push(response.choices[0].message);
 
   let toolCall: ToolCall;
+  let format: string = "";
+
   if (tools) {
     for (const tool of tools) {
       const toolName = tool.function.name;
       logger.info("---[ TOOL ]---", toolName);
-      if (tool.function.name === AssetGenerator.tool_name) {
+
+      if (tool.function.name === AssetGenerator.tool_name && !base64) {
         const args = JSON.parse(tool.function.arguments);
         toolCall = new AssetGenerator(args.prompt, args.size);
       } else if (tool.function.name === RemoveBackgroundTool.tool_name) {
         toolCall = new RemoveBackgroundTool(base64!);
+      } else if (tool.function.name === ConvertToVectorTool.tool_name) {
+        toolCall = new ConvertToVectorTool(base64!);
       } else {
-        break;
+        messages.push({
+          role: "tool",
+          content: "No tool call found",
+          tool_call_id: tool.id,
+        });
+        continue;
       }
 
       const result = await toolCall.performCall();
+      base64 = result.content.base64;
+      format = result.content.format;
 
       messages.push({
         role: "tool",
         content: result.message,
         tool_call_id: tool.id,
       });
-
-      return await handleAgent(messages, result.content.base64);
     }
+    return await handleAgent(messages, base64);
   }
-  return base64;
+  return { base64: base64 || "", format };
 };
