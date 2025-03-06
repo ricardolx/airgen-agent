@@ -18,7 +18,7 @@ If the user request is vague, get creative and make the best asset you can based
 If there is minimal details, default to clean minimalistic and modern designs that echo apple design trends.
 
 generate_asset - design an asset image in webp format for a software project
-remove_background - remove the background from an image
+remove_background - remove the background from an image. Only use this before converting an icon to an icon, or if explicitly asked to by the user.
 convert_to_vector - convert an image to a vector svg
 vector_to_icon - to optimize SVGs, remove unnecessary data, apply monotone colors to make them suitable as icons
 `;
