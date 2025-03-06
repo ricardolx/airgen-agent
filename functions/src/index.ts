@@ -1,19 +1,33 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-import {onRequest} from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { defineSecret } from "firebase-functions/params";
+import { invokeAgent } from "./ai/agent/agent";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+const openAiApiKey = defineSecret("OPENAI_API_KEY");
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+console.log("[ OpenAI API Key ]", { openAiApiKey: openAiApiKey });
+
+export const generateImage = onRequest(
+  { secrets: [openAiApiKey] },
+  async (request, response) => {
+    try {
+      const { prompt } = request.body;
+      console.log(request.body);
+
+      if (!prompt) {
+        response.status(400).send({ error: "Prompt is required" });
+        return;
+      }
+
+      const result = await invokeAgent(prompt);
+
+      // Convert base64 to binary buffer and send as image
+      const imageBuffer = Buffer.from(result, "base64");
+      response.setHeader("Content-Type", "image/png");
+      response.send(imageBuffer);
+    } catch (error) {
+      logger.error("Error generating image:", error);
+      response.status(500).send({ error: "Failed to generate image" });
+    }
+  }
+);
