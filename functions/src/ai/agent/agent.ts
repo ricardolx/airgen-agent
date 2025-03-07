@@ -55,15 +55,8 @@ export const handleAgent = async (
 
       const result = await toolCall.performCall();
 
-      console.log("[ Result ]", {
-        b64: result.content.base64.substring(0, 10),
-        format: result.content.format,
-      });
-
       base64 = result.content.base64;
       format = result.content.format;
-
-      console.log("[ New Format ]", format);
 
       messages.push({
         role: "tool",
@@ -86,11 +79,11 @@ export const callLlm = async (
     tools: [generateAssetTool, removeBackgroundTool, convertToVectorTool],
   });
 
-  console.log("[ Response Usage ]", response.usage);
+  logger.info("[ Response Usage ]", response.usage);
 
   const tools = response.choices[0].message.tool_calls;
   if (tools) {
-    console.log(
+    logger.info(
       "[ Response with Tools ]",
       tools.map(tool => tool.function.name).join(", ")
     );
