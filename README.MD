@@ -20,8 +20,8 @@ The Agent decides to use which tool based on the asset description provided by t
 
 Suggested models 
 
-**gpt-4o-mini** - Agent 
-**dale-e-3** - image generator
+- **gpt-4o-mini** - Agent 
+- **dale-e-3** - image generator
 
 ### Api
 
