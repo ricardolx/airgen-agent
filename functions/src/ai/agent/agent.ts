@@ -8,7 +8,10 @@ import {
   RemoveBackgroundTool,
   removeBackgroundTool,
 } from "./tools/removeBackground";
-import { ConvertToVectorTool, convertToVectorTool } from "./tools/pngToVector";
+import {
+  ConvertToVectorTool,
+  convertToVectorTool,
+} from "./tools/convertToVector";
 import { ChatCompletionMessage } from "openai/src/resources/index.js";
 
 export const invokeAgent = async (prompt: string) => {
@@ -40,10 +43,16 @@ export const handleAgent = async (
       if (tool.function.name === AssetGenerator.tool_name && !base64) {
         const args = JSON.parse(tool.function.arguments);
         toolCall = new AssetGenerator(args.prompt, args.size);
-      } else if (tool.function.name === RemoveBackgroundTool.tool_name) {
-        toolCall = new RemoveBackgroundTool(base64!);
-      } else if (tool.function.name === ConvertToVectorTool.tool_name) {
-        toolCall = new ConvertToVectorTool(base64!);
+      } else if (
+        tool.function.name === RemoveBackgroundTool.tool_name &&
+        base64
+      ) {
+        toolCall = new RemoveBackgroundTool(base64);
+      } else if (
+        tool.function.name === ConvertToVectorTool.tool_name &&
+        base64
+      ) {
+        toolCall = new ConvertToVectorTool(base64);
       } else {
         messages.push({
           role: "tool",
