@@ -27,7 +27,7 @@ Suggested models
 
 #### Endpoints
 
-**/generateImage** - generate image asset
+- **/generateImage** - generate image asset
 
 ### Cloud Function Infrastructure
 
@@ -35,4 +35,4 @@ Built using serverless firebase cloud functions and cloud secrets
 
 #### Secrets
 
-**OPENAI_API_KEY** - the openai api key
+- **OPENAI_API_KEY** - the openai api key
